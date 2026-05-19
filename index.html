@@ -1,0 +1,50 @@
+<script>
+const map = {};
+document.querySelectorAll('.k[data-c]').forEach(el => map[el.dataset.c] = el);
+const alias = {
+  ShiftRight:   'ShiftLeft',
+  ControlRight: 'ControlLeft',
+  AltRight:     'AltLeft',
+};
+
+const timers = {};
+
+try {
+  // Принимаем безопасные сигналы из главного процесса Электрона
+  const { ipcRenderer } = require('electron');
+  
+  ipcRenderer.on('global-key', (e, data) => {
+    const el = map[data.code];
+    if (!el) return;
+
+    if (data.type === 'keydown') {
+      clearTimeout(timers[data.code]);
+      el.classList.remove('off');
+      el.classList.add('on');
+    } else if (data.type === 'keyup') {
+      el.classList.remove('on');
+      el.classList.add('off');
+      timers[data.code] = setTimeout(() => el.classList.remove('off'), 950);
+    }
+  });
+} catch(e) {
+  // Обычный браузерный режим на случай тестов в Хроме
+  document.addEventListener('keydown', e => {
+    const code = alias[e.code] || e.code;
+    const el = map[code];
+    if (!el) return;
+    clearTimeout(timers[code]);
+    el.classList.remove('off');
+    el.classList.add('on');
+  });
+
+  document.addEventListener('keyup', e => {
+    const code = alias[e.code] || e.code;
+    const el = map[code];
+    if (!el) return;
+    el.classList.remove('on');
+    el.classList.add('off');
+    timers[code] = setTimeout(() => el.classList.remove('off'), 950);
+  });
+}
+</script>
